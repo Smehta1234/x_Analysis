@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./xAnalysisBackend
+    env_file:
+      - ./xAnalysisBackend/.env
+    volumes:
+      - ./xAnalysisBackend:/app
+    depends_on:
+      - redis
+      - postgres
+    restart: always
+
+  frontend:
+    build:
+      context: ./xAnalysisFrontend
+    volumes:
+      - ./xAnalysisFrontend:/app
+    depends_on:
+      - backend
+    restart: always
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./xAnalysisFrontend/build:/app/frontend/build
+      - ./xAnalysisBackend/static:/app/backend/static
+      - ./xAnalysisBackend/media:/app/backend/media
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - frontend
+    restart: always
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydatabase
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:
