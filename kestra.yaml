@@ -1,0 +1,42 @@
+id: twitter-data-pipeline
+namespace: twitter-project
+description: Workflow to scrape tweets, process, store, and notify frontend.
+
+inputs:
+  hashtag:
+    type: STRING
+    description: Twitter hashtag to scrape
+  start_date:
+    type: STRING
+    description: Start date for tweets
+  end_date:
+    type: STRING
+    description: End date for tweets
+
+tasks:
+  - id: scrape-tweets
+    type: io.kestra.core.tasks.scripts.Python
+    description: Scrape tweets using Selenium
+    properties:
+      script: |
+        from selenium import webdriver
+        scrape_tweets('{{inputs.hashtag}}', '{{inputs.start_date}}', '{{inputs.end_date}}')
+
+ - id: store-in-database
+    type: io.kestra.core.tasks.scripts.Python
+    description: Store processed tweets in the database
+    properties:
+      script: |
+        from django.db import connection
+        # Use Django models or raw SQL to insert tweets
+        store_tweets()
+
+  - id: notify-django
+    type: io.kestra.core.tasks.scripts.Http
+    description: Notify Django backend to push processed data
+    url: "http://your-django-server-url/api/notify"
+    method: POST
+    body:
+      status: "completed"
+    headers:
+      Content-Type: application/json
